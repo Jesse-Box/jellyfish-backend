@@ -57,9 +57,28 @@ def find_best_rgba_match(target_rgb, background_rgb, alpha_steps=100):
     for i in range(1, alpha_steps + 1):
         alpha = i / alpha_steps
 
-        for r in range(0, 256, 8):
-            for g in range(0, 256, 8):
-                for b in range(0, 256, 8):
+        # Calculate optimal foreground RGB mathematically for this alpha
+        optimal_fg = []
+        for j in range(3):
+            # Solve: target = alpha * fg + (1 - alpha) * bg
+            # Therefore: fg = (target - (1 - alpha) * bg) / alpha
+            fg_exact = (target_rgb[j] - (1 - alpha) * background_rgb[j]) / alpha
+            optimal_fg.append(fg_exact)
+
+        # Find the nearest quantized RGB values (multiples of 8) to test
+        # We'll test a small 3x3x3 grid around the optimal point
+        center_r = max(0, min(248, round(optimal_fg[0] / 8) * 8))
+        center_g = max(0, min(248, round(optimal_fg[1] / 8) * 8))
+        center_b = max(0, min(248, round(optimal_fg[2] / 8) * 8))
+
+        # Test candidates in a 3x3x3 grid around the center
+        for r_offset in [-8, 0, 8]:
+            for g_offset in [-8, 0, 8]:
+                for b_offset in [-8, 0, 8]:
+                    r = max(0, min(248, center_r + r_offset))
+                    g = max(0, min(248, center_g + g_offset))
+                    b = max(0, min(248, center_b + b_offset))
+
                     blended = [
                         blend_channel(background_rgb[0], r, alpha),
                         blend_channel(background_rgb[1], g, alpha),
