@@ -1,5 +1,5 @@
 import sentry_sdk
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
 
@@ -107,43 +107,162 @@ def find_best_rgba_match(target_rgb, background_rgb, alpha_steps=100):
     return best_match
 
 
-def generate_alpha_scale(hex_scale, background_hex="#ffffff", label_prefix="blueA"):
-    background_rgb = hex_to_rgb(background_hex)
-    output = []
+def calculate_transparent_colors(foreground_colors, background_color):
+    """
+    Calculate transparent RGBA values for given foreground colors against a background.
 
-    for i, hex in enumerate(hex_scale, 1):
-        target_rgb = hex_to_rgb(hex)
+    Args:
+        foreground_colors: str or list of str - hex color(s) to convert
+        background_color: str - hex background color
+
+    Returns:
+        list of dict - each containing original hex and calculated rgba
+    """
+    # Ensure foreground_colors is a list
+    if isinstance(foreground_colors, str):
+        foreground_colors = [foreground_colors]
+
+    background_rgb = hex_to_rgb(background_color)
+    results = []
+
+    for hex_color in foreground_colors:
+        target_rgb = hex_to_rgb(hex_color)
         match = find_best_rgba_match(tuple(target_rgb), tuple(background_rgb))
         r, g, b, a = match
-        output.append(f"--{label_prefix}{i}: rgba({r}, {g}, {b}, {a});")
 
-    return output
+        results.append(
+            {
+                "originalHex": hex_color,
+                "rgba": f"rgba({r}, {g}, {b}, {a})",
+                "rgbaValues": {"r": r, "g": g, "b": b, "a": a},
+            }
+        )
+
+    return results
 
 
-@flask_app.route("/api/data/colors/")
-def get_target_color():
-    with sentry_sdk.start_transaction(name="test"):
-        color_scale = [
-            "#F7F7FF",
-            "#EDEEFF",
-            "#E2E2FF",
-            "#D4D3FF",
-            "#C5C3FF",
-            "#B7B2FF",
-            "#A79EFF",
-            "#988AFF",
-            "#7F66FF",
-            "#7553FF",
-            "#653DE9",
-            "#5827D6",
-            "#4C0FC0",
-            "#3F00A7",
-            "#31008B",
-            "#24006C",
-        ]
+@flask_app.route("/api/colors/", methods=["POST"], strict_slashes=False)
+def process_colors():
+    """
+    Process foreground and background colors to calculate transparent RGBA values.
 
-        output = generate_alpha_scale(color_scale, "#ffffff", "blueA")
-        return jsonify(output)
+    Expected JSON payload:
+    {
+        "backgroundColor": "#ffffff",
+        "foregroundColor": "#ff0000" or ["#ff0000", "#00ff00", "#0000ff"]
+    }
+
+    Returns:
+    {
+        "backgroundColor": "#ffffff",
+        "results": [
+            {
+                "originalHex": "#ff0000",
+                "rgba": "rgba(255, 0, 0, 1)",
+                "rgbaValues": {"r": 255, "g": 0, "b": 0, "a": 1}
+            }
+        ],
+        "status": "success"
+    }
+    """
+    try:
+        # Validate request content type
+        if not request.is_json:
+            return jsonify(
+                {"error": "Content-Type must be application/json", "status": "error"}
+            ), 400
+
+        data = request.get_json()
+
+        # Validate required fields
+        if not data:
+            return jsonify({"error": "No JSON data provided", "status": "error"}), 400
+
+        background_color = data.get("backgroundColor")
+        foreground_color = data.get("foregroundColor")
+
+        if not background_color:
+            return jsonify(
+                {"error": "backgroundColor is required", "status": "error"}
+            ), 400
+
+        if not foreground_color:
+            return jsonify(
+                {"error": "foregroundColor is required", "status": "error"}
+            ), 400
+
+        # Validate hex color format
+        def is_valid_hex(color):
+            if not isinstance(color, str):
+                return False
+            color = color.strip()
+            if not color.startswith("#"):
+                return False
+            hex_part = color[1:]
+            if len(hex_part) not in [3, 6]:
+                return False
+            try:
+                int(hex_part, 16)
+                return True
+            except ValueError:
+                return False
+
+        # Normalize 3-digit hex to 6-digit
+        def normalize_hex(color):
+            color = color.strip()
+            if len(color) == 4:  # #RGB -> #RRGGBB
+                return "#" + "".join([c * 2 for c in color[1:]])
+            return color
+
+        # Validate background color
+        if not is_valid_hex(background_color):
+            return jsonify(
+                {
+                    "error": f"Invalid backgroundColor format: {background_color}. Expected format: #ffffff or #fff",
+                    "status": "error",
+                }
+            ), 400
+
+        # Validate foreground color(s)
+        foreground_list = (
+            foreground_color
+            if isinstance(foreground_color, list)
+            else [foreground_color]
+        )
+
+        for i, color in enumerate(foreground_list):
+            if not is_valid_hex(color):
+                return jsonify(
+                    {
+                        "error": f"Invalid foregroundColor format at index {i}: {color}. Expected format: #ffffff or #fff",
+                        "status": "error",
+                    }
+                ), 400
+
+        # Normalize colors
+        background_color = normalize_hex(background_color)
+        if isinstance(foreground_color, list):
+            foreground_color = [normalize_hex(color) for color in foreground_color]
+        else:
+            foreground_color = normalize_hex(foreground_color)
+
+        # Calculate transparent colors
+        with sentry_sdk.start_transaction(name="calculate_transparent_colors"):
+            results = calculate_transparent_colors(foreground_color, background_color)
+
+        return jsonify(
+            {
+                "backgroundColor": background_color,
+                "results": results,
+                "status": "success",
+            }
+        )
+
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        return jsonify(
+            {"error": f"Internal server error: {str(e)}", "status": "error"}
+        ), 500
 
 
 if __name__ == "__main__":
