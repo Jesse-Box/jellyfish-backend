@@ -17,21 +17,21 @@ sentry_sdk.init(
 )
 
 # Create Flask app
-flask_app = Flask(__name__)
+jellyfish = Flask("jellyfish")
 
 # Wrap with Sentry middleware
-app = SentryWsgiMiddleware(flask_app)
+app = SentryWsgiMiddleware(jellyfish)
 
-CORS(flask_app)  # CORS should be applied to the Flask app, not the middleware
+CORS(jellyfish)  # CORS should be applied to the Flask app, not the middleware
 
 
-@flask_app.route("/")
+@jellyfish.route("/")
 def hello_world():
     1 / 0  # raises an error
     return "<p>Hello, World!</p>"
 
 
-@flask_app.route("/api/data/")
+@jellyfish.route("/api/data/")
 def get_data():
     return jsonify({"message": "Hello from Flask!", "status": "success"})
 
@@ -141,7 +141,7 @@ def calculate_transparent_colors(foreground_colors, background_color):
     return results
 
 
-@flask_app.route("/api/colors/", methods=["POST"], strict_slashes=False)
+@jellyfish.route("/api/colors/", methods=["POST"], strict_slashes=False)
 def process_colors():
     """
     Process foreground and background colors to calculate transparent RGBA values.
@@ -266,4 +266,4 @@ def process_colors():
 
 
 if __name__ == "__main__":
-    flask_app.run(host="127.0.0.1", port=5000, debug=True)
+    jellyfish.run(host="127.0.0.1", port=5000, debug=True)
