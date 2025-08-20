@@ -26,14 +26,8 @@ CORS(jellyfish)  # CORS should be applied to the Flask app, not the middleware
 
 
 @jellyfish.route("/")
-def hello_world():
-    1 / 0  # raises an error
-    return "<p>Hello, World!</p>"
-
-
-@jellyfish.route("/api/data/")
 def get_data():
-    return jsonify({"message": "Hello from Flask!", "status": "success"})
+    return jsonify({"message": "Jellyfish Backend", "status": "success"})
 
 
 def hex_to_rgb(hex):
