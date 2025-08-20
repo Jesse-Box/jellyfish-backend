@@ -1,4 +1,4 @@
-# Jellyfin Backend
+# Jellyfish Backend
 
 ## Dev Environment
 How to start the environment
