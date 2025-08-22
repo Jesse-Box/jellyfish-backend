@@ -1,6 +1,6 @@
-# 🎨 Jellyfish Backend
+# 🪼 Jellyfish Backend
 
-A high-performance Flask API for calculating optimal transparent RGBA color values that blend perfectly with specified background colors. This tool is essential for designers and developers who need precise color transparency calculations for UI elements, overlays, and visual effects.
+**A Sentry Hackweek project which was entirely vibe-coded.** This was an exercise in learning Python by a Product Designer that largely has entry-level engineering abilities. I encourage anyone to improve the generated code with the intention of making it faster, clearer or simpler.
 
 ![Python](https://img.shields.io/badge/python-3.13+-blue.svg)
 ![Flask](https://img.shields.io/badge/flask-3.0.0-green.svg)
@@ -12,8 +12,6 @@ A high-performance Flask API for calculating optimal transparent RGBA color valu
 - **⚡ High Performance**: Processes 371+ colors per second with optimized mathematical calculations  
 - **🎨 Flexible Input**: Supports single colors or batches of multiple colors
 - **🌈 Multiple Formats**: Accepts both 3-digit (#fff) and 6-digit (#ffffff) hex colors
-- **🚨 Error Monitoring**: Integrated Sentry for production error tracking and performance monitoring
-- **🌐 CORS Enabled**: Ready for cross-origin requests from web frontends
 - **📊 Detailed Responses**: Returns both CSS-ready rgba() strings and individual RGBA values
 
 ## 🚀 Quick Start
