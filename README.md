@@ -75,24 +75,6 @@ The server runs in debug mode with automatic reloading on code changes.
 
 ## 🎯 API Reference
 
-### Base URL
-```
-http://127.0.0.1:5000
-```
-
-### Endpoints
-
-#### `GET /`
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "message": "Jellyfish Backend", 
-  "status": "success"
-}
-```
-
 #### `POST /api/colors/`
 Calculate transparent RGBA values for foreground colors against a background.
 
