@@ -2,12 +2,8 @@ import sentry_sdk
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from colors import calculate_transparent_colors
-from validation import (
-    normalize_hex,
-    validate_foreground_list,
-    validate_request,
-)
+from .colors import calculate_transparent_colors
+from .validation import normalize_hex, validate_foreground_list, validate_request
 
 sentry_sdk.init(
     dsn="https://5a289d9c36119a97d6c4b2a0c687aa5d@o925438.ingest.us.sentry.io/4509869299073024",
