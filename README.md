@@ -42,7 +42,7 @@
 
 4. **Run the application:**
    ```bash
-   python3 app.py
+   python3 -m src.app
    ```
 
 The API will be available at `http://127.0.0.1:5000`
@@ -62,7 +62,7 @@ The API will be available at `http://127.0.0.1:5000`
 source venv/bin/activate
 
 # Start the development server
-python3 app.py
+python3 -m src.app
 ```
 
 The server runs in debug mode with automatic reloading on code changes.
@@ -215,7 +215,10 @@ The color blending algorithm:
 
 ```
 jellyfish-backend/
-├── app.py                    # Main Flask application
+├── src/
+│   ├── app.py               # Main Flask application
+│   ├── colors.py            # Color calculation logic
+│   └── validation.py        # Input validation
 ├── requirements.txt          # Python dependencies
 ├── API_USAGE_EXAMPLES.md    # Detailed API examples
 ├── README.md                # This file
