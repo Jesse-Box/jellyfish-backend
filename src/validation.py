@@ -1,3 +1,6 @@
+from .parsers import is_valid_color
+
+
 def is_valid_hex(color):
     if not isinstance(color, str):
         return False
@@ -14,7 +17,6 @@ def is_valid_hex(color):
         return False
 
 
-# Normalize 3-digit hex to 6-digit
 def normalize_hex(color):
     color = color.strip()
     if len(color) == 4:  # #RGB -> #RRGGBB
@@ -28,7 +30,6 @@ def validate_request(request):
 
     data = request.get_json()
 
-    # Validate required fields
     if not data:
         return "No JSON data provided"
 
@@ -41,12 +42,11 @@ def validate_request(request):
     if not foreground_color:
         return "foregroundColor is required"
 
-    # Validate background color
-    if not is_valid_hex(background_color):
-        return f"Invalid backgroundColor format: {background_color}. Expected format: #ffffff or #fff"
+    if not is_valid_color(background_color):
+        return f"Invalid backgroundColor format: {background_color}"
 
 
 def validate_foreground_list(foreground_list):
     for i, color in enumerate(foreground_list):
-        if not is_valid_hex(color):
-            return "Invalid foregroundColor format at index {i}: {color}. Expected format: #ffffff or #fff"
+        if not is_valid_color(color):
+            return f"Invalid foregroundColor format at index {i}: {color}"

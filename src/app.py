@@ -3,7 +3,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from .colors import calculate_transparent_colors
-from .validation import normalize_hex, validate_foreground_list, validate_request
+from .validation import validate_foreground_list, validate_request
 
 sentry_sdk.init(
     dsn="https://5a289d9c36119a97d6c4b2a0c687aa5d@o925438.ingest.us.sentry.io/4509869299073024",
@@ -65,13 +65,7 @@ def process_colors():
         if error:
             return jsonify({"error": error, "status": "error"}), 400
 
-        # Normalize colors
         background_color = request.get_json().get("backgroundColor")
-        background_color = normalize_hex(background_color)
-        if isinstance(foreground_color, list):
-            foreground_color = [normalize_hex(color) for color in foreground_color]
-        else:
-            foreground_color = normalize_hex(foreground_color)
 
         # Calculate transparent colors
         with sentry_sdk.start_transaction(name="calculate_transparent_colors"):

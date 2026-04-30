@@ -1,11 +1,4 @@
-def hex_to_rgb(hex):
-    hex = hex.replace("#", "")
-    big_int = int(hex, 16)
-    return [
-        (big_int >> 16) & 255,
-        (big_int >> 8) & 255,
-        big_int & 255,
-    ]
+from .parsers import detect_format, parse_to_rgb, rgb_to_format
 
 
 def blend_channel(bg, fg, alpha):
@@ -74,28 +67,28 @@ def calculate_transparent_colors(foreground_colors, background_color):
     Calculate transparent RGBA values for given foreground colors against a background.
 
     Args:
-        foreground_colors: str or list of str - hex color(s) to convert
-        background_color: str - hex background color
+        foreground_colors: str or list of str - color(s) to convert (any supported format)
+        background_color: str - background color (any supported format)
 
     Returns:
-        list of dict - each containing original hex and calculated rgba
+        list of dict - each containing original color string and calculated result
     """
-    # Ensure foreground_colors is a list
     if isinstance(foreground_colors, str):
         foreground_colors = [foreground_colors]
 
-    background_rgb = hex_to_rgb(background_color)
+    background_rgb = parse_to_rgb(background_color)
     results = []
 
-    for hex_color in foreground_colors:
-        target_rgb = hex_to_rgb(hex_color)
+    for color in foreground_colors:
+        target_rgb = parse_to_rgb(color)
         match = find_best_rgba_match(tuple(target_rgb), tuple(background_rgb))
         r, g, b, a = match
+        fmt = detect_format(color)
 
         results.append(
             {
-                "originalHex": hex_color,
-                "rgba": f"rgba({r}, {g}, {b}, {a})",
+                "original": color,
+                "rgba": rgb_to_format(r, g, b, a, fmt, original=color),
                 "rgbaValues": {"r": r, "g": g, "b": b, "a": a},
             }
         )
