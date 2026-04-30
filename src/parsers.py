@@ -4,11 +4,13 @@ import re
 # ── Format detection ──────────────────────────────────────────────────────────
 
 _PATTERNS = {
-    "hex":    re.compile(r"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"),
+    "hex":    re.compile(r"^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"),
+    "rgba":   re.compile(r"^rgba\(", re.IGNORECASE),
     "rgb":    re.compile(r"^rgb\(", re.IGNORECASE),
     "hsl":    re.compile(r"^hsl\(", re.IGNORECASE),
     "hwb":    re.compile(r"^hwb\(", re.IGNORECASE),
     "oklch":  re.compile(r"^oklch\(", re.IGNORECASE),
+    "oklab":  re.compile(r"^oklab\(", re.IGNORECASE),
     "lch":    re.compile(r"^lch\(", re.IGNORECASE),
     "lab":    re.compile(r"^lab\(", re.IGNORECASE),
 }
@@ -228,12 +230,16 @@ def parse_to_rgb(color):
         hex_str = color.replace("#", "")
         if len(hex_str) == 3:
             hex_str = "".join(c * 2 for c in hex_str)
+        elif len(hex_str) == 4:      # #rgba → expand RGB, drop alpha
+            hex_str = "".join(c * 2 for c in hex_str[:3])
+        elif len(hex_str) == 8:      # #rrggbbaa → drop alpha
+            hex_str = hex_str[:6]
         n = int(hex_str, 16)
         return (n >> 16) & 255, (n >> 8) & 255, n & 255
 
     vals = _parse_values(color)
 
-    if fmt == "rgb":
+    if fmt in ("rgb", "rgba"):
         return _clamp(round(vals[0])), _clamp(round(vals[1])), _clamp(round(vals[2]))
 
     if fmt == "hsl":
@@ -256,6 +262,12 @@ def parse_to_rgb(color):
         L = vals[0] / 100 if "%" in first_token else vals[0]
         return _oklch_to_rgb(L, vals[1], vals[2])
 
+    if fmt == "oklab":
+        inner = re.sub(r"^oklab\(|\)$", "", color.strip(), flags=re.IGNORECASE)
+        first_token = re.split(r"[\s,/]+", inner.strip())[0]
+        L = vals[0] / 100 if "%" in first_token else vals[0]
+        return _oklab_to_rgb(L, vals[1], vals[2])
+
     raise ValueError(f"Unsupported color format: {color}")
 
 
@@ -267,9 +279,15 @@ def rgb_to_format(r, g, b, a, fmt, original=None):
     alpha_str = f" / {a}"
 
     if fmt == "hex":
-        hex_color = f"#{r:02x}{g:02x}{b:02x}"
+        original_len = len(color.replace("#", "")) if original else 6
+        if original_len in (4, 8):
+            alpha_hex = round(a * 255)
+            return f"#{r:02x}{g:02x}{b:02x}{alpha_hex:02x}"
         if a == 1:
-            return hex_color
+            return f"#{r:02x}{g:02x}{b:02x}"
+        return f"rgba({r}, {g}, {b}, {a})"
+
+    if fmt == "rgba":
         return f"rgba({r}, {g}, {b}, {a})"
 
     if fmt == "rgb":
@@ -293,9 +311,14 @@ def rgb_to_format(r, g, b, a, fmt, original=None):
 
     if fmt == "oklch":
         L, C, H = _rgb_to_oklch(r, g, b)
-        # Preserve % notation if original used it
         use_percent = original and re.match(r"oklch\(\s*[\d.]+%", original, re.IGNORECASE)
         l_str = f"{L * 100:.2f}%" if use_percent else f"{L:.4f}"
         return f"oklch({l_str} {C:.4f} {H:.3f}{alpha_str})"
+
+    if fmt == "oklab":
+        L, av, bv = _rgb_to_oklab(r, g, b)
+        use_percent = original and re.match(r"oklab\(\s*[\d.]+%", original, re.IGNORECASE)
+        l_str = f"{L * 100:.2f}%" if use_percent else f"{L:.4f}"
+        return f"oklab({l_str} {av:.4f} {bv:.4f}{alpha_str})"
 
     raise ValueError(f"Unsupported format: {fmt}")
